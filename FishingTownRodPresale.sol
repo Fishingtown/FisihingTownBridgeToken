@@ -14,7 +14,7 @@ contract FishingTownRodPresale is Ownable {
     IFishingTownRod public fishingRod;
     address public treasuryAddress;
     uint256 public price;
-    uint256 public productQuantity;
+    uint256 public salesQuota;
     uint256 public saleAmount;
 
     constructor(
@@ -22,14 +22,14 @@ contract FishingTownRodPresale is Ownable {
         address _fishingRod,
         address _treasuryAddress,
         uint256 _price,
-        uint256 _productQuantity
+        uint256 _salesQuota
     ) {
         require(
             _token != address(0) &&
                 _fishingRod != address(0) &&
                 _treasuryAddress != address(0) &&
-                 _price > 0 && 
-                 _productQuantity > 0,
+                _price > 0 &&
+                _salesQuota > 0,
             "cannot be zero"
         );
 
@@ -37,17 +37,16 @@ contract FishingTownRodPresale is Ownable {
         fishingRod = IFishingTownRod(_fishingRod);
         treasuryAddress = _treasuryAddress;
         price = _price;
-        productQuantity = _productQuantity;
+        salesQuota = _salesQuota;
     }
 
     function purchaseFishingRod() external {
-        require(saleAmount < productQuantity, "sale is over");
+        require(saleAmount < salesQuota, "sold out");
         saleAmount++;
 
         token.safeTransferFrom(msg.sender, treasuryAddress, price);
         uint256 tokenId = fishingRod.safeMint(msg.sender);
 
-        emit Purchase(msg.sender,tokenId);
+        emit Purchase(msg.sender, tokenId);
     }
-    
 }

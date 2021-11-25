@@ -17,7 +17,7 @@ contract FishingTownRodShop is Ownable {
     address public treasuryAddress;
     uint256 public priceInFhtn;
     uint256 public maxPriceInUsd;
-    uint256 public productQuantity;
+    uint256 public salesQuota;
     uint256 public saleAmount;
 
     constructor(
@@ -27,7 +27,7 @@ contract FishingTownRodShop is Ownable {
         address _pairAddress,
         uint256 _priceInFhtn,
         uint256 _maxPriceInUsd,
-        uint256 _productQuantity
+        uint256 _salesQuota
     ) {
         require(
             _fhtn != address(0) &&
@@ -36,7 +36,7 @@ contract FishingTownRodShop is Ownable {
                 _pairAddress != address(0) &&
                 _priceInFhtn > 0 &&
                 _maxPriceInUsd > 0 &&
-                _productQuantity > 0,
+                _salesQuota > 0,
             "cannot be zero"
         );
 
@@ -46,13 +46,13 @@ contract FishingTownRodShop is Ownable {
         pair = IPancakePair(_pairAddress);
         priceInFhtn = _priceInFhtn;
         maxPriceInUsd = _maxPriceInUsd;
-        productQuantity = _productQuantity;
+        salesQuota = _salesQuota;
     }
 
     function purchaseFishingRod() external {
-        require(saleAmount < productQuantity, "sale is over");
+        require(saleAmount < salesQuota, "sold out");
         saleAmount++;
-        
+
         uint256 _currentPriceInFhtn = currentPriceInFhtn();
         fhtn.safeTransferFrom(msg.sender, treasuryAddress, _currentPriceInFhtn);
         uint256 tokenId = fishingRod.safeMint(msg.sender);
@@ -62,7 +62,7 @@ contract FishingTownRodShop is Ownable {
 
     function currentPriceInFhtn() public view returns (uint256) {
         uint256 _fhtnUsdRate = fhtnUsdRate();
-        if (maxPriceInUsd < priceInFhtn * _fhtnUsdRate / (1 ether)) {
+        if (maxPriceInUsd < (priceInFhtn * _fhtnUsdRate) / (1 ether)) {
             return (maxPriceInUsd * 1 ether) / _fhtnUsdRate;
         }
 

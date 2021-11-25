@@ -5,17 +5,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IERC20.sol";
 
 contract BridgeBase is Ownable {
-
-    event Mint(
+    event TransferTokenToOnchain(
         address indexed sender,
-        uint256 indexed id,
+        uint256 indexed nonce,
         address indexed to,
-        uint256 amount,
-        uint256 timestamp
+        uint256 amount
+    );
+    event TransferTokenToOffchain(
+        address indexed sender,
+        uint256 indexed nonce,
+        uint256 amount
     );
 
     IERC20 public token;
-    mapping(uint256 => bool) public nonces;
+    mapping(uint256 => bool) public offchainNonces;
+    uint256 public nonce;
 
     constructor(address _token) {
         require(_token != address(0), "token address cannot be zero");
@@ -23,15 +27,22 @@ contract BridgeBase is Ownable {
         token = IERC20(_token);
     }
 
-    function mint(
-        uint256 nonce,
+    function transferTokenToOnchain(
+        uint256 offchainNonce,
         address to,
         uint256 amount
     ) external onlyOwner {
-        require(nonces[nonce] == false, "nonce already used");
-        nonces[nonce] = true;
+        require(offchainNonces[offchainNonce] == false, "nonce already used");
+        offchainNonces[offchainNonce] = true;
         token.mint(to, amount);
-        emit Mint(msg.sender, nonce, to, amount, block.timestamp);
+
+        emit TransferTokenToOnchain(msg.sender, offchainNonce, to, amount);
     }
 
+    function transferTokenToOffchain(uint256 amount) external {
+        token.burnFrom(msg.sender, amount);
+        nonce++;
+
+        emit TransferTokenToOffchain(msg.sender, nonce, amount);
+    }
 }
