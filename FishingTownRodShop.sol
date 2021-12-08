@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IFishingTownRod.sol";
-import "./interfaces/IPancakePair.sol";
+import "./interfaces/IFishingTownPriceOracle.sol";
 
 contract FishingTownRodShop is Ownable {
     using SafeERC20 for IERC20;
@@ -12,28 +12,31 @@ contract FishingTownRodShop is Ownable {
     event Purchase(address indexed buyer, uint256 tokenId, uint256 price);
 
     IERC20 public fhtn;
+    address public busdAddress;
     IFishingTownRod public fishingRod;
-    IPancakePair public pair;
+    IFishingTownPriceOracle public priceOracle;
     address public treasuryAddress;
     uint256 public priceInFhtn;
     uint256 public maxPriceInUsd;
     uint256 public salesQuota;
     uint256 public saleAmount;
-
+    
     constructor(
         address _fhtn,
+        address _busdAddress,
         address _fishingRod,
         address _treasuryAddress,
-        address _pairAddress,
+        address _priceOracle,
         uint256 _priceInFhtn,
         uint256 _maxPriceInUsd,
         uint256 _salesQuota
     ) {
         require(
             _fhtn != address(0) &&
+            _busdAddress != address(0) &&
                 _fishingRod != address(0) &&
                 _treasuryAddress != address(0) &&
-                _pairAddress != address(0) &&
+                _priceOracle != address(0) &&
                 _priceInFhtn > 0 &&
                 _maxPriceInUsd > 0 &&
                 _salesQuota > 0,
@@ -41,9 +44,10 @@ contract FishingTownRodShop is Ownable {
         );
 
         fhtn = IERC20(_fhtn);
+        busdAddress = _busdAddress;
         fishingRod = IFishingTownRod(_fishingRod);
         treasuryAddress = _treasuryAddress;
-        pair = IPancakePair(_pairAddress);
+        priceOracle = IFishingTownPriceOracle(_priceOracle);
         priceInFhtn = _priceInFhtn;
         maxPriceInUsd = _maxPriceInUsd;
         salesQuota = _salesQuota;
@@ -61,16 +65,13 @@ contract FishingTownRodShop is Ownable {
     }
 
     function currentPriceInFhtn() public view returns (uint256) {
-        uint256 _fhtnUsdRate = fhtnUsdRate();
-        if (maxPriceInUsd < (priceInFhtn * _fhtnUsdRate) / (1 ether)) {
-            return (maxPriceInUsd * 1 ether) / _fhtnUsdRate;
+        uint256 _priceInUsd = priceOracle.consult(address(fhtn), priceInFhtn);
+        
+        if (_priceInUsd > maxPriceInUsd) {
+            return priceOracle.consult(busdAddress, maxPriceInUsd);
         }
 
         return priceInFhtn;
     }
 
-    function fhtnUsdRate() public view returns (uint256) {
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-        return ((reserve1 * 1 ether) / reserve0);
-    }
 }
