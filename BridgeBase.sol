@@ -65,7 +65,7 @@ abstract contract BridgeBase is EIP712, Pausable, AccessControl {
             "require at least 3 trusted validators"
         );
         require(
-            signatures.length > trustedValidatorCount / 2 + 1,
+            signatures.length > _ceilDiv(trustedValidatorCount,2),
             "require at least half of trusted validators to be validated"
         );
         require(offchainNonces[offchainNonce] == false, "nonce already used");
@@ -140,5 +140,9 @@ abstract contract BridgeBase is EIP712, Pausable, AccessControl {
         trustedValidators[_trustedValidator] = false;
         trustedValidatorCount--;
         emit TrustedValidatorRevoked(msg.sender, _trustedValidator);
+    }
+
+    function _ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a / b + (a % b == 0 ? 0 : 1);
     }
 }
