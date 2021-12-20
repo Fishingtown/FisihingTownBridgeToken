@@ -65,7 +65,7 @@ abstract contract BridgeBase is EIP712, Pausable, AccessControl {
             "require at least 3 trusted validators"
         );
         require(
-            signatures.length > _ceilDiv(trustedValidatorCount,2),
+            signatures.length >= _ceilDiv(trustedValidatorCount,2),
             "require at least half of trusted validators to be validated"
         );
         require(offchainNonces[offchainNonce] == false, "nonce already used");
@@ -123,6 +123,7 @@ abstract contract BridgeBase is EIP712, Pausable, AccessControl {
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        require(_trustedValidator != address(0), "trusted validator address cannot be zero");
         require(
             !trustedValidators[_trustedValidator],
             "trusted validator already granted"
